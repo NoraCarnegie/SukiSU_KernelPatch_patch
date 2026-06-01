@@ -8,6 +8,18 @@
 #include <baselib.h>
 #include <log.h>
 
+#ifdef ANDROID
+__attribute__((weak)) int load_ap_package_config(void)
+{
+    return 0;
+}
+
+__attribute__((weak)) int refresh_trusted_manager_state(void)
+{
+    return 0;
+}
+#endif
+
 int report_user_event(const char *event, const char *args)
 {
     const char *safe_event = event ? event : "";
