@@ -61,7 +61,7 @@ int android_sepolicy_flags_fix();
 #endif
 
 void init_patchsu();
-void init_sukisu_ultra();
+int init_sukisu_ultra();
 
 static void before_rest_init(hook_fargs4_t *args, void *udata)
 {
@@ -145,6 +145,11 @@ static void after_kernel_init(hook_fargs4_t *args, void *udata)
     extra_event_init(EXTRA_EVENT_POST_KERNEL_INIT);
 }
 
+static void after_do_init_module(hook_fargs1_t *args, void *udata)
+{
+    init_sukisu_ultra();
+}
+
 int patch()
 {
     linux_libs_symbol_init();
@@ -179,6 +184,14 @@ int patch()
     if (kernel_init_addr) {
         rc = hook_wrap4((void *)kernel_init_addr, before_kernel_init, after_kernel_init, 0);
         log_boot("hook kernel_init rc: %d\n", rc);
+    }
+
+    unsigned long do_init_module_addr = kallsyms_lookup_name("do_init_module");
+    if (do_init_module_addr) {
+        rc = hook_wrap1((void *)do_init_module_addr, NULL, after_do_init_module, NULL);
+        log_boot("hook do_init_module rc: %d\n", rc);
+    } else {
+        log_boot("hook do_init_module failed: symbol not found\n");
     }
 
     return rc;

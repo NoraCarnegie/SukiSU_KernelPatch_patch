@@ -91,14 +91,19 @@ void before_sukisu_kpm_control(hook_fargs3_t* args, void* udata) {
     args->skip_origin = 1;
 }
 
-void init_sukisu_ultra() {
+int init_sukisu_ultra() {
     unsigned long addr;
     int rc;
+    int hooked = 0;
+    static int sukisu_kpm_ready;
+
+    if (sukisu_kpm_ready) return 0;
 
     addr = kallsyms_lookup_name("sukisu_kpm_load_module_path");
     if(addr) {
         rc = hook_wrap4((void*) addr, before_sukisu_load_module_path, NULL, NULL);
         log_boot("hook sukisu_load_module_path rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_load_module_path faild \n", rc);
     }
@@ -107,6 +112,7 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap3((void*) addr, before_sukisu_unload_module, NULL, NULL);
         log_boot("hook sukisu_kpm_unload_module rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_unload_module faild \n", rc);
     }
@@ -115,6 +121,7 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap1((void*) addr, before_sukisu_kpm_num, NULL, NULL);
         log_boot("hook sukisu_kpm_num rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_num faild \n", rc);
     }
@@ -123,6 +130,7 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap3((void*) addr, before_sukisu_kpm_list, NULL, NULL);
         log_boot("hook sukisu_kpm_list rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_list faild \n", rc);
     }
@@ -131,6 +139,7 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap3((void*) addr, before_sukisu_kpm_info, NULL, NULL);
         log_boot("hook sukisu_kpm_info rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_info faild \n", rc);
     }
@@ -139,6 +148,7 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap3((void*) addr, before_sukisu_kpm_control, NULL, NULL);
         log_boot("hook sukisu_kpm_control rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_control faild \n", rc);
     }
@@ -147,8 +157,17 @@ void init_sukisu_ultra() {
     if(addr) {
         rc = hook_wrap3((void*) addr, before_sukisu_kpm_version, NULL, NULL);
         log_boot("hook sukisu_kpm_version rc:%d \n", rc);
+        if (!rc) hooked++;
     } else {
         log_boot("hook sukisu_kpm_version faild \n", rc);
     }
 
+    if (hooked == 7) {
+        sukisu_kpm_ready = 1;
+        log_boot("sukisu kpm hooks ready\n");
+        return 0;
+    }
+
+    log_boot("sukisu kpm hooks pending: %d/7\n", hooked);
+    return -1;
 }

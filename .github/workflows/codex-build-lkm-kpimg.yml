@@ -1,0 +1,44 @@
+name: Codex Build LKM kpimg
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y make gcc g++ xz-utils
+
+      - name: Install arm64 bare-metal toolchain
+        run: |
+          curl -L --retry 4 --retry-delay 5 \
+            -o arm-gnu-toolchain.tar.xz \
+            https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz
+          tar -Jxf arm-gnu-toolchain.tar.xz
+
+      - name: Build Android kpimg
+        run: |
+          export TARGET_COMPILE="$PWD/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-"
+          export ANDROID=1
+          cd kernel
+          make clean
+          make -j"$(nproc)"
+          cp kpimg ../kpimg-android-lkm
+          cp kpimg.elf ../kpimg.elf-android-lkm
+
+      - name: Upload kpimg
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpimg-android-lkm
+          path: |
+            kpimg-android-lkm
+            kpimg.elf-android-lkm
